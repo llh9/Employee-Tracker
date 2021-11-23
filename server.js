@@ -1,61 +1,57 @@
 const express = require('express');
-const inquirer = require('inquire');
-const input = require('input');
-//const consTbl = require('console.table');
 const mysql = require('mysql2');
-const { query, response } = require('express');
+const input = require('input');
+const inquirer = require('inquirer');
 const cTable = require('console.table');
-//const router = express.Router();
-require('dotenv').config();
 
-
-const opts1 = [ 'View', 'Add', 'Update Employee Role' ];
-const opts2 = [ 'Employee', 'Role', 'Department'];
-
-var newDpt = [''];
-var newRle = ['','','',''];
-var newEmp = ['','','','',''];
-
-var dptCounter = 0;
-var rleCounter = 0;
-var empCounter = 0;
-
-var taskNum = 0;
-var done = false;
- 
 const app = express();
-
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
-//app.use(router);
+
+const choices = ['View all Employees', 'View all Roles', 'View all Departments', 'Add an Employee', 'Add a Role', 'Add a Department', 'Update an Employee']
+var roleIds;
+var selection = 0;
+var done = false;
+var temp = [];
 
 const db = mysql.createConnection(
     {
-        host: 'localhost',
-        // MySQL username,
-        user: 'root',
-        // MySQL password
-        password: 'onelovefamily',
-        database: 'employer_db',
-        multipleStatements: true
+      host: 'localhost',
+      // MySQL username,
+      user: 'root',
+      // MySQL password
+      password: 'onelovefamily',
+      database: 'employer_db'
     },
-    console.log(`Connected to the employer_db database...`)
+    console.log('Connection to the data base successful')
 );
+const view = (table) => {
+    if(table == 1){
+        let sql = `SELECT * FROM employee;`;
+        db.execute(sql, function(err, result) {
+            
+            if(err) throw err;
+            /*console.log(result);*/
+            result.forEach((res) => {
+                let table = cTable.getTable(res);
+                console.log(table);
+            })
 
-const pool = mysql.createPool(
-    {
-      host: process.env.DB_HOST, 
-      user: process.env.DB_USER, 
-      database: process.env.DB_NAME,
-      password: process.env.DB_PASSWORD
+            input.confirm('Would you like to complete another task?').then((response) => {
+                console.log(response);
+                if(response == false){  
+                    done = true 
+                }
+                run();
+            });
+
+        });  
     }
-);
 
-
-const init  = async () =>{
-    if(employer_db){
-        pool.execute('source db/schema.sql; source db/seeds.sql; SELECT * FROM employer_db', function(err, result) {
-
+    if(table == 2){
+        let sql = `SELECT * FROM role;`;
+        db.execute(sql, function(err, result) {
+            
             if(err) throw err;
             /*console.log(result);*/
             result.forEach((res) => {
@@ -64,268 +60,255 @@ const init  = async () =>{
             })
             input.confirm('Would you like to complete another task?').then((response) => {
                 console.log(response);
-            })
-        
-        });
-    }else{
-        
-    }
-}
-
-
-
-const editDb = (taskNum, []) => { 
-    
-    switch (taskNum) {
-        case 1:
-            //show departments 
-            db.query('SHOW FULL TABLE IN employer_db LIKE departments', function (err, results) {
-                console.log(`\nThis is from console log: \n${results}`);
+                if(response == false){  
+                    done = true 
+                }
+                run();            
             });
+            
+        }); 
+    }
+    
+    if(table == 3){
+        let sql = `SELECT * FROM department;`;
+        db.execute(sql, function(err, result) {
+            
+            if(err) throw err;
+            /*console.log(result);*/
+            result.forEach((res) => {
+                let table = cTable.getTable(res);
+                console.log(table);
+            })
+            input.confirm('Would you like to complete another task?').then((response) => {
+                console.log(response);
+                if(response == false){  
+                    done = true 
+                }
+                run();
+            })
+            
+        }); 
+    }
 
-        break;
-        case 2:
-            //show roles 
-            db.query('SHOW FULL TABLE IN employer_db LIKE departments', function (err, results) {
-                console.log(`\nThis is from console log: \n${results}`);
-            }); 
-        break;
-        case 3:
-            //show employees
-            db.query('SHOW FULL TABLE IN employer_db LIKE departments', function (err, results) {
-                console.log(`\nThis is from console log: \n${results}`);
-            });  
-        break;
-        case "4":
-            //add departments
-            let sql = 'SELECT * FROM employee;';
-            pool.execute(sql, function(err, result) {
+};
+const add = (oneOfThree) => {
+    if(oneOfThree == 1){
+        console.log(temp);
+        for(var j = 0; j < 2; j++){
+
+            if(j == 1){
+                console.log('in j = 1');
+                var sql = "INSERT INTO `employer_db`.`employee` (`first_name`, `last_name`, `role_id`, `manager_id`) VALUES ('"+`${temp[0]}`+"', '"+`${temp[1]}`+"', '"+`${temp[2]}`+"', '"+`${temp[3]}`+"');"
+                ;
+                
+            }
+
+            if(j == 0){
+                console.log('in j = 0');
+                var sql = "SELECT * FROM `employer_db`.`employee`;"
+                ;
+            }
+            
+            db.execute(sql, function(err, result) {
 
                 if(err) throw err;
-                /*console.log(result);*/
-                result.forEach((res) => {
+                (res, result) => {
                     let table = cTable.getTable(res);
-                    console.log(table);
-                })
-                input.confirm('Would you like to complete another task?').then((response) => {
-                    console.log(response);
-                    response == false ? done = true : run();
-                })
+                   // console.log(table);
+                };
+            });  
+        }
+        input.confirm('Would you like to complete another task?').then((response) => {
+            console.log(response);
+            if(response == false){  
+                done = true;
                 
-            });
-            break;
-        case 5:
-            //add roles
-            db.query(`INSERT INTO role (id, name) (${newRle[0]}, ${newRle[1]}, ${newRle[2]}, ${newRle[3]});`, function (err, results) {
-                console.log(`\nThis is from console log: \n${results}`);
-            });
-        break;
-        case 6:
-            //add employees
-            db.query(`INSERT INTO employee (id, name) (${newDpt[0]}, ${newDpt[1]}`, function (err, results) {
-                console.log(`\nThis is from console log: \n${results}`);
-            });
-        break; 
-        case 7:
-            //update employees
-            db.query('UPDATE `employee` SET ? = ? WHERE `first_name` = ? AND `last_name` = ?;',[role, value], function (err, results) {
-                console.log(`\nThis is from console log: \n${results}`);
-            });
-        break;
-        default: console.info(`Case statements no match`);
+            }
+        }).then(() => run())
+    }
 
-        
+    if(oneOfThree == 2){
+        console.log(temp);
+        for(var j = 0; j < 2; j++){
+
+            if(j == 1){
+                console.log('in j = 1');
+                var sql = "INSERT INTO `employer_db`.`role` (`title`, `salary`, `department_id`) VALUES ('"+`${temp[0]}`+"', '"+`${temp[1]}`+"', '"+`${temp[2]}`+"');"
+                ;
+                
+            }
+
+            if(j == 0){
+                console.log('in j = 0');
+                var sql = "SELECT * FROM `employer_db`.`role`;"
+                ;
+            }
+            
+            db.execute(sql, function(err, result) {
+
+                if(err) throw err;
+                (res, result) => {
+                    let table = cTable.getTable(res);
+                   // console.log(table);
+                };
+            });  
+        }
+        input.confirm('Would you like to complete another task?').then((response) => {
+            console.log(response);
+            if(response == false){  
+                done = true;
+                
+            }
+        }).then(() => run());
     }
     
-}
+    if(oneOfThree == 3){
+        console.log(temp);
+        for(var j = 0; j < 2; j++){
 
-const addDpt = async () => {
+            if(j == 1){
+                console.log('in j = 1');
+                var sql = "INSERT INTO `employer_db`.`department` (`name`) VALUES ('"+`${temp[0]}`+"');"
+                ;
+            }
 
-    taskNum = "4";
-    input.text('What is the new department'+"'"+'s name?', { default: 'newDepartmetn' })
-    .then(async (response) => {
-        
-        newDpt = await response.toString();
-        console.info(`new dpt array[${newDpt}] and the Task Num:"${taskNum}"`);
-        console.info(`Respoonse: [${response}]`);
-    })
-    .then((response) =>{
-        console.info(`new dpt array[${newDpt}] and the Task Num:"${taskNum}"`);
-        editDb(taskNum, newDpt);
-    })
-}
+            if(j == 0){
+                console.log('in j = 0');
+                var sql = "SELECT * FROM `employer_db`.`department`;"
+                ;
+            }
+            
+            db.execute(sql, function(err, result) {
 
-const addRle =  () => {
-
-    inquirer.prompt([
-        {
-            type: 'input', 
-            name: 'jobTitle', 
-            message: 'Enter the job title.', 
-            default: `role${dptcounter}`
-        },
-        {
-            type: 'number', 
-            name: 'jobSalary', 
-            message: 'Enter the job title.', 
-            default: '100000'
-        },
-        {
-            type: 'input', 
-            name: 'jobDepartment', 
-            message: 'Enter the job department name.', 
-            default: `department${dptcounter}`
+                if(err) throw err;
+                (res, result) => {
+                    let table = cTable.getTable(res);
+                   // console.log(table);
+                };
+            });  
         }
-
-    ])
-    .then((answers) => {
-
-        newRle = [ answers.jobTitle, answers.jobSalary, answers.jobDepartment ]
-
+        input.confirm('Would you like to complete another task?').then((response) => {
+            console.log(response);
+            if(response == false){  
+                done = true;
+                
+            }
+        }).then(() => run());
+    }
+};
+const update = () => {
+    let sql = "UPDATE `employer_db`.`employee` SET `role_id` = `"+`${temp[2]}`+"` WHERE (`employee`.`first_name` = `"+`${temp[0]}`+"` AND `employee`.`last_name` = `"+`${temp[1]}`+"`);";
+    db.execute(sql, (err, result) => {
+        if(err) throw err;
+        (res, result) => {
+            let table = cTable.getTable(res);
+           // console.log(table);
+        }; 
     })
-    .catch((error) => {
-
-        if (error.isTtyError) {
-
-            console.log("Prompt couldn't be rendered in the current environment");
-
-        } else {
-
-            console.log("something else went wrong");
-        }
-
-    });
-}
-
-const addEmp = () => {
-    inquirer.prompt([
-        {
-            type: 'input', 
-            name: 'firstName', 
-            message: 'Enter the first name.', 
-            default: 'Employee'
-        },
-        {
-            type: 'input', 
-            name: 'lastName', 
-            message: 'Enter the last name.', 
-            default: `${empCounter}`
-        },
-        {
-            type: 'input', 
-            name: 'role', 
-            message: 'Enter the job title for this employee.', 
-            default: `jobNumber${rleCounter}`
-        },
-        {
-            type: 'number', 
-            name: 'empSalary', 
-            message: 'Enter the yearly salary of this employee.', 
-            default: `department${dptcounter}`
-        }
-
-    ])
-    .then((answers) => {
-
-        newEmp = [ answers.firstName, answers.lastName, answers.role, answers.empSalary ]
-
-    })
-    .catch((error) => {
-
-        if (error.isTtyError) {
-
-            console.log("Prompt couldn't be rendered in the current environment");
-
-        } else {
-
-            console.log("something else went wrong");
-        }
-
-    });
-}
-
-async function showTrackerOptions() {
-
-    input.select('Would you like to see or edit a data.?', opts1, { 
-
-        validate(answer) {
-            console.log(answer);
+    input.confirm('Would you like to complete another task?').then((response) => {
+        console.log(response);
+        if(response == false){  
+            done = true;
         }
     })
-    .then((response) => {
-        switch (response) {
-            case 'View':
-
-            input.select('Select a task or display.', opts2, {
-                validate(display) {
-
-                    switch (display) {
-                        case 'Employee':
-        
-                        break;
-                        case 'Role':
-        
-                        break;
-                        case 'Department':
-        
-                        break;
-                        default: 'Employee'
-                    }
-                }
-            });
-
-            break;
-            case 'Add':
-
-            input.select('What would you like to add', opts2, {
-                validate(answer) {
-                    console.log(answer)
-                }
-            })
-            .then((response) => {
-
-                switch (response) {
-                    case 'Employee':
-    
-                    break;
-                    case 'Role':
-    
-                    break;
-                    case 'Department':
-                        addDpt();
-                    break;
-                    default: 'Employee'
-                }
-            })
-
-            break;
-            case 'Update Employee Role':
-
-            const name = input.text('What is your name?', { default: 'New Role' });
-
-            break;
-            default: 'View'
-        }
-    });   //return `You have chosen only ${answer.length} animals! Keep trying!`;
-        
-}
-
-const run = () => { 
-    if(done == false) { 
-        showTrackerOptions();
+    .then(() => run());
+};
+async function selector(selection) {
+    if(selection == 0){
+        view(1);
+    }else if(selection == 1){
+        view(2);
+    }else if(selection == 2){
+        view(3);
+    }else if(selection == 3){
+        roleIds++;
+        let firstName = await input.text('What is the first name of the employee')
+        .then(async (response) => {
+            temp[0] = response;
+        });
+        let lastName = await input.text('What is the last name of the employee')
+        .then(async (response) => {
+            temp[1] = response;
+        });
+        let role_id = await input.text('What is the role id of the employee')
+        .then(async (response) => {
+            temp[2] = response;
+        });
+        let manager_id= await input.text('What is the departmente id of this role(default recomended)',
+        {default: roleIds}
+        )
+        .then(async (response) => {
+            temp[3] = response;
+        })
+        .then((response) => {
+            console.log(JSON.stringify(temp));
+            add(1);
+        });
+    }else if(selection == 4){
+        let title = await input.text('What is the name of the role.')
+        .then(async (response) => {
+            temp[0] = response;
+        });
+        let salary = await input.text('What is the salary for this role.')
+        .then(async (response) => {
+            temp[1] = response;
+        });
+        let department_id = await input.text('What is the department id of the employee.')
+        .then(async (response) => {
+            temp[2] = response;
+        }).then((response) => {
+            console.log(JSON.stringify(temp));
+            add(2);
+        });
+    }else if(selection == 5){
+        let name = await input.text('What is the name of the department')
+        .then(async (response) => {
+            temp[0] = response;
+        })
+        .then((response) => {
+            console.log(JSON.stringify(temp));
+            add(3);
+        });
+    }else if(selection == 6){
+        let firstName = await input.text('What is the first name of the employee')
+        .then(async (response) => {
+            temp[0] = response;
+        });
+        let lastName = await input.text('What is the last name of the employee')
+        .then(async (response) => {
+            temp[1] = response;
+        })
+        let roleName = await input.text(`What role would you like to assign ${temp[0]} ${temp[1]} `) 
+        .then(async (response) => {
+            temp[2] = response;
+        }).then(() => {
+            update();        
+        });    
+    }else{
+        alert("Im sorry but your selection has not been recorded. Please try again.");
         return;
-    }
-    console.log('press [control]+[c]');
-}
+    };
+};
+async function QnA() {
+    task = await input.select( 'What would you like to get done today?', 
+        choices
+    )
+    .then((response) => {
+        console.log(response);
+        for(let i = 0; i < 7; i++) {
+            if(response == choices[i]){
+                selection = i;
+                selector(selection);
+                return;
+            }
+        }
+    });
+};
+const run = () => 
+done == true ? 
+console.log('Untill next time. \npress [control] & [c]') : 
+QnA();
 
-if(done == false){
-    console.log(done);
-    
-    showTrackerOptions();
-}else{
-    done = true;
-    console.log('reset');
-    return;
-}
+run();
 
-app.listen(process.env.PORT || 3001)
+app.listen(process.env.PORT || 3001);
